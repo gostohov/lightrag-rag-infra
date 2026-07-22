@@ -1,0 +1,68 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: mgpt-nginx
+    depends_on:
+      - vllm-qwen
+      - vllm-embed
+    ports:
+      - "443:443"
+    volumes:
+      - "./nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./certs:/etc/nginx/certs:ro"
+    restart: always
+
+  vllm-qwen:
+    image: nexus.mir:59999/vllm/vllm-openai:v0.20.0-cu129
+    container_name: mgpt-vllm-qwen
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HF_HUB_OFFLINE=1
+    volumes:
+      - "/apps/mgpt/models/llm:/root/.cache/huggingface:ro"
+    expose:
+      - "8071"
+    command: >
+      /root/.cache/huggingface/Qwen/Qwen3.6-27B-FP8
+      --served-model-name qwen3.6-27b-fp8
+      --trust-remote-code
+      --enable-auto-tool-choice 
+      --tool-call-parser qwen3_coder
+      --reasoning-parser qwen3
+      --enable-prefix-caching
+      --gpu-memory-utilization 0.85
+      --max-model-len 262144
+      --max-num-seqs 256
+      --generation-config vllm
+      --port 8071
+    restart: always
+
+  vllm-embed:
+    image: nexus.mir:59999/vllm/vllm-openai:v0.20.0-cu129
+    container_name: mgpt-vllm-embed
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HF_HUB_OFFLINE=1
+    volumes:
+      - "/apps/mgpt/models/llm:/root/.cache/huggingface:ro"
+    expose:
+      - "8072"
+    command: >
+      /root/.cache/huggingface/BAAI/bge-m3
+      --served-model-name bge-m3
+      --runner pooling
+      --gpu-memory-utilization 0.10
+      --port 8072
+    restart: always

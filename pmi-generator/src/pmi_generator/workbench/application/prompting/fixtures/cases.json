@@ -1,0 +1,187 @@
+[
+  {
+    "case_id": "informational_statement",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-INFO-001"],
+    "context": {"selection": "Приложение предназначено для карт ПС Мир."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["outcome"],
+    "assertions": [{"path": "arguments.outcome", "equals": "no_testable_behavior"}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "no_testable_behavior", "skeletons": []}
+    }
+  },
+  {
+    "case_id": "independent_conditions",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-SPLIT-001"],
+    "context": {"selection": "При P1=01 вернуть 6A86. При P1=02 вернуть 6985."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["outcome", "skeleton_count"],
+    "assertions": [{"path": "arguments.skeleton_count", "equals": 2}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "submitted", "skeleton_count": 2}
+    }
+  },
+  {
+    "case_id": "one_action_many_consequences",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-CONS-001"],
+    "context": {"selection": "При ошибке прекратить команду, поставить бит и вернуть 6987."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["skeleton_count"],
+    "assertions": [{"path": "arguments.skeleton_count", "equals": 1}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "submitted", "skeleton_count": 1, "consequences": 3}
+    }
+  },
+  {
+    "case_id": "explicit_values",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-VALUES-001"],
+    "context": {"selection": "Допустимы значения 01 и 02."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["skeleton_count"],
+    "assertions": [{"path": "arguments.skeleton_count", "equals": 2}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "submitted", "skeleton_count": 2}
+    }
+  },
+  {
+    "case_id": "value_class_without_guess",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-NOGUESS-001"],
+    "context": {"selection": "Значение должно принадлежать классу Dx."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["has_gap"],
+    "assertions": [{"path": "arguments.has_gap", "equals": true}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "submitted", "has_gap": true}
+    }
+  },
+  {
+    "case_id": "not_equal_value_without_guess",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-NOGUESS-001"],
+    "context": {
+      "selection": {
+        "text": "Если первый байт данных не равен 81, карта возвращает 6987."
+      }
+    },
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["skeletons"],
+    "assertions": [
+      {"path": "arguments.skeletons.0.input_value", "equals": null},
+      {"path": "arguments.skeletons.0.gaps.0.kind", "equals": "input_value"}
+    ],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {
+        "outcome": "skeletons_created",
+        "explanation": "Конкретное невалидное значение не задано.",
+        "skeletons": [
+          {
+            "input_value": null,
+            "gaps": [
+              {
+                "kind": "input_value"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "case_id": "no_reverse_inference",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-REVERSE-001"],
+    "context": {"selection": "Если MAC совпал, уменьшить счётчик."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["reverse_case_created"],
+    "assertions": [{"path": "arguments.reverse_case_created", "equals": false}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "submitted", "reverse_case_created": false}
+    }
+  },
+  {
+    "case_id": "insufficient_selection",
+    "prompt_id": "prompt_1",
+    "rule_ids": ["PMI-RANGE-001"],
+    "context": {"selection": "То карта прекращает выполнение команды."},
+    "expected_tool": "submit_decomposition",
+    "required_arguments": ["outcome"],
+    "assertions": [{"path": "arguments.outcome", "equals": "insufficient_selection"}],
+    "scripted_response": {
+      "tool_name": "submit_decomposition",
+      "arguments": {"outcome": "insufficient_selection", "reason": "Не видно условия."}
+    }
+  },
+  {
+    "case_id": "direct_status_observation",
+    "prompt_id": "prompt_2",
+    "rule_ids": ["PMI-SW-001"],
+    "context": {"selection": "Вернуть 6987.", "skeleton": {}, "card": {}, "evidence": []},
+    "expected_tool": "submit_card_population",
+    "required_arguments": ["expected_status"],
+    "assertions": [{"path": "arguments.expected_status", "equals": "6987"}],
+    "scripted_response": {
+      "tool_name": "submit_card_population",
+      "arguments": {"expected_status": "6987", "gaps": []}
+    }
+  },
+  {
+    "case_id": "internal_state_needs_observation",
+    "prompt_id": "prompt_2",
+    "rule_ids": ["PMI-OBS-001"],
+    "context": {"selection": "Уменьшить счётчик.", "skeleton": {}, "card": {}, "evidence": []},
+    "expected_tool": "submit_card_population",
+    "required_arguments": ["gaps"],
+    "assertions": [{"path": "arguments.gaps", "equals": ["способ наблюдения"]}],
+    "scripted_response": {
+      "tool_name": "submit_card_population",
+      "arguments": {"expected_status": "9000", "gaps": ["способ наблюдения"]}
+    }
+  },
+  {
+    "case_id": "similar_retrieval_is_not_evidence",
+    "prompt_id": "prompt_3",
+    "rule_ids": ["PMI-EVIDENCE-001"],
+    "context": {"selection": "Счётчик SK SMI", "card": {}, "gap": "тег счётчика", "evidence": []},
+    "expected_tool": "submit_gap_result",
+    "required_arguments": ["outcome"],
+    "assertions": [{"path": "arguments.outcome", "equals": "not_found"}],
+    "scripted_response": {
+      "tool_name": "submit_gap_result",
+      "arguments": {"outcome": "not_found", "similar_tag_rejected": "9F36"}
+    }
+  },
+  {
+    "case_id": "human_knowledge_requires_confirmation",
+    "prompt_id": "conversation",
+    "rule_ids": ["PMI-HUMAN-001"],
+    "context": {
+      "messages": [
+        {
+          "type": "human",
+          "content": "Может использовать 80?"
+        }
+      ]
+    },
+    "expected_tool": "submit_analyst_answer",
+    "required_arguments": ["proposal_only"],
+    "assertions": [
+      {"path": "arguments.proposal_only", "equals": true}
+    ],
+    "scripted_response": {
+      "tool_name": "submit_analyst_answer",
+      "arguments": {"proposal_only": true}
+    }
+  }
+]

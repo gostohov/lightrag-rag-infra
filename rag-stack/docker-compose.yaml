@@ -1,0 +1,104 @@
+services:
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    container_name: lightrag-nginx
+    depends_on:
+      lightrag:
+        condition: service_started
+    ports:
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+  lightrag:
+    image: ${LIGHTRAG_IMAGE:-ghcr.io/hkuds/lightrag:latest}
+    container_name: lightrag-server
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${LIGHTRAG_EXPOSE_PORT:-9621}:9621"
+    volumes:
+      - ./data/rag_storage:/app/data/rag_storage
+      - ./data/inputs:/app/data/inputs
+      - ./data/prompts:/app/data/prompts
+      - ./data/tiktoken:/app/data/tiktoken
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: lightrag-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lightrag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DATABASE:-lightrag}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lightrag} -d ${POSTGRES_DATABASE:-lightrag}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  neo4j:
+    image: ${NEO4J_IMAGE:-neo4j:5-community}
+    container_name: lightrag-neo4j
+    environment:
+      NEO4J_AUTH: ${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-change-me}
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-1g}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-4g}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-2g}
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u ${NEO4J_USERNAME:-neo4j} -p ${NEO4J_PASSWORD:-change-me} 'RETURN 1' >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+    restart: unless-stopped
+
+  qdrant:
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:latest}
+    container_name: lightrag-qdrant
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  ollama-embed:
+    image: ${OLLAMA_EMBED_IMAGE:-ollama/ollama:0.15.2}
+    container_name: lightrag-ollama-embed
+    ports:
+      - "${OLLAMA_EMBED_PORT:-11434}:11434"
+    volumes:
+      - ${OLLAMA_MODELS_HOST_PATH:-/apps/mgpt/models/ollama}:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_MODELS=/root/.ollama/models
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  qdrant_data:

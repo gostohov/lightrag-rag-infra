@@ -1,0 +1,24 @@
+[project]
+name = "pmi-generator"
+version = "0.1.0"
+description = "Interactive analyst Workbench for preparing technical PMI."
+requires-python = ">=3.11"
+dependencies = [
+  "langchain>=1.0.0",
+  "langgraph>=1.0.0",
+  "langgraph-checkpoint-sqlite>=3.0.0",
+  "jsonschema>=4.23.0,<5.0.0",
+  "prompt_toolkit>=3.0.0",
+  "pypdf>=6.14.0,<7.0.0",
+  "rich>=14.0.0",
+]
+
+[project.scripts]
+pmi-generator = "pmi_generator.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+pmi_generator = ["workbench/application/prompting/fixtures/*.json"]
